@@ -56,7 +56,10 @@ internal class Day08 : IChallenge
                 for (var j = 0; j < _rows.GetLength(1); j++)
                 {
                     var score = HighestScenicScore(i, j);
-                    if (score > result) result = score;
+                    if (score > result)
+                    {
+                        result = score;
+                    }
                 }
             }
 
