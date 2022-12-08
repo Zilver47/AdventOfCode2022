@@ -19,24 +19,23 @@ internal class Day07 : IChallenge
 
         //system.Print(0);
 
-        var allDirectories = system.GetDirectories();
-
-        return allDirectories
-            .Where(d => d.Item2 <= 100000)
-            .Sum(d => d.Item2);
+        var directorySizes = system.GetAllDirectoriesSizes();
+        return directorySizes
+            .Where(size => size <= 100000)
+            .Sum();
     }
 
     public long Part2()
     {
         var system = BuildSystem();
         
-        var allDirectories = system.GetDirectories();
+        var directorySizes = system.GetAllDirectoriesSizes();
 
         var available = 70000000 - system.Size();
         var needed = 30000000 - available;
-        return allDirectories
-            .Where(d => d.Item2 >= needed)
-            .Min(d => d.Item2);
+        return directorySizes
+            .Where(size  => size >= needed)
+            .Min();
     }
 
     private Directory BuildSystem()
@@ -45,10 +44,12 @@ internal class Day07 : IChallenge
         var current = system;
         foreach (var command in _input)
         {
+            var splitted = command.Split(' ');
             if (command.StartsWith("$ cd"))
             {
                 if (command.EndsWith("/"))
                 {
+                    // Do nothing on purpose
                 }
                 else if (command.EndsWith(".."))
                 {
@@ -56,21 +57,20 @@ internal class Day07 : IChallenge
                 }
                 else
                 {
-                    var name = command.Replace("$ cd ", string.Empty);
+                    var name = splitted[2];
                     current = current.Children.First(c => c.Name == name) as Directory;
                 }
             }
-            else if (command.StartsWith("dir "))
-            {
-                var name = command.Replace("dir ", string.Empty);
-                current.AddChild(new Directory(name, current));
-            }
             else if (command.StartsWith("$ ls"))
             {
+                // Do nothing on purpose
+            }
+            else if (command.StartsWith("dir "))
+            {
+                current.AddChild(new Directory(splitted[1], current));
             }
             else
             {
-                var splitted = command.Split(' ');
                 current.AddChild(new File(splitted[1], int.Parse(splitted[0]), current));
             }
         }
@@ -78,13 +78,13 @@ internal class Day07 : IChallenge
         return system;
     }
 
-    abstract class Base
+    abstract class FileSystemNode
     {
         public string Name { get; }
 
         public Directory Parent { get; }
 
-        protected Base(string name, Directory parent)
+        protected FileSystemNode(string name, Directory parent)
         {
             Name = name;
             Parent = parent;
@@ -95,16 +95,16 @@ internal class Day07 : IChallenge
         public abstract void Print(int depth);
     }
 
-    class Directory : Base
+    class Directory : FileSystemNode
     {
-        public List<Base> Children { get; }
+        public List<FileSystemNode> Children { get; }
 
         public Directory(string name, Directory parent) : base(name, parent)
         {
-            Children = new List<Base>();
+            Children = new List<FileSystemNode>();
         }
 
-        public void AddChild(Base data)
+        public void AddChild(FileSystemNode data)
         {
             Children.Add(data);
         }
@@ -129,22 +129,21 @@ internal class Day07 : IChallenge
             }
         }
 
-        public IEnumerable<Tuple<string, long>> GetDirectories()
+        public IEnumerable<long> GetAllDirectoriesSizes()
         {
-            var result = new List<Tuple<string, long>>();
-            foreach (var childDirectories in Children.OfType<Directory>().Select(child => child.GetDirectories()))
+            var result = new List<long>();
+            foreach (var childDirectories in Children.OfType<Directory>().Select(child => child.GetAllDirectoriesSizes()))
             {
                 result.AddRange(childDirectories);
             }
 
-            result.Add(new Tuple<string, long>(Name, Size()));
+            result.Add(Size());
 
             return result;
         }
     }
 
-    private class File : Base
-
+    private class File : FileSystemNode
     {
         private readonly int _size;
 
