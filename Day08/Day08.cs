@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -28,7 +29,9 @@ internal class Day08 : IChallenge
 
     public class Board
     {
-        private readonly int[,] _rows;
+        private readonly int[,] _cells;
+        private readonly int[][] _rows;
+        private readonly int[][] _columns;
 
         public int MaxColumns { get; }
         public int MaxRows { get; }
@@ -37,25 +40,29 @@ internal class Day08 : IChallenge
         {
             MaxRows = line.Count;
             MaxColumns = line[0].Length;
-            _rows = new int[MaxRows, MaxColumns];
+            _cells = new int[MaxRows, MaxColumns];
 
             for (var row = 0; row < MaxRows; row++)
             {
                 for (var column = 0; column < MaxColumns; column++)
                 {
-                    _rows[row, column] = int.Parse(line[row].ToCharArray()[column].ToString());
+                    _cells[row, column] = int.Parse(line[row].ToCharArray()[column].ToString());
                 }
             }
+
+            _rows = GetRows();
+            _columns = GetColumns();
         }
+
 
         public long HighestScenicScore()
         {
             long result = 0;
-            for (var i = 0; i < _rows.GetLength(0); i++)
+            for (var i = 0; i < _cells.GetLength(0); i++)
             {
-                for (var j = 0; j < _rows.GetLength(1); j++)
+                for (var j = 0; j < _cells.GetLength(1); j++)
                 {
-                    var score = HighestScenicScore(i, j);
+                    var score = GetScenicScore(i, j);
                     if (score > result)
                     {
                         result = score;
@@ -66,65 +73,23 @@ internal class Day08 : IChallenge
             return result;
         }
 
-        private long HighestScenicScore(int row, int column)
+        private long GetScenicScore(int row, int column)
         {
-            var height = _rows[row, column];
-            
-            return CountFromTop(row, column, height)
-                   * CountFromBottom(row, column, height)
-                   * CountFromLeft(row, column, height)
-                   * CountFromRight(row, column, height);
+            var height = _cells[row, column];
+
+            return GetOneDirectionScore(height, _columns[column][..row].Reverse())
+                   * GetOneDirectionScore(height, _columns[column][(row + 1)..])
+                   * GetOneDirectionScore(height, _rows[row][..column].Reverse())
+                   * GetOneDirectionScore(height, _rows[row][(column + 1)..]);
         }
 
-        private long CountFromRight(int row, int column, int height)
+        private int GetOneDirectionScore(int height, IEnumerable<int> trees)
         {
-            long result = 0;
-            for (var i = column + 1; i < MaxColumns; i++)
+            var result = 0;
+            foreach (var tree in trees)
             {
                 result++;
-                if (_rows[row, i] >= height)
-                {
-                    return result;
-                }
-            }
-            return result;
-        }
-
-        private long CountFromLeft(int row, int column, int height)
-        {
-            long result = 0;
-            for (var i = column - 1; i >= 0; i--)
-            {
-                result++;
-                if (_rows[row, i] >= height)
-                {
-                    return result;
-                }
-            }
-            return result;
-        }
-
-        private long CountFromBottom(int row, int column, int height)
-        {
-            long result = 0;
-            for (var i = row + 1; i < MaxRows; i++)
-            {
-                result++;
-                if (_rows[i, column] >= height)
-                {
-                    return result;
-                }
-            }
-            return result;
-        }
-
-        private long CountFromTop(int row, int column, int height)
-        {
-            long result = 0;
-            for (var i = row - 1; i >= 0; i--)
-            {
-                result++;
-                if (_rows[i, column] >= height)
+                if (tree >= height)
                 {
                     return result;
                 }
@@ -135,9 +100,9 @@ internal class Day08 : IChallenge
         public int NumberOfVisibleTrees()
         {
             var result = 0;
-            for (var i = 0; i < _rows.GetLength(0); i++)
+            for (var i = 0; i < _cells.GetLength(0); i++)
             {
-                for (var j = 0; j < _rows.GetLength(1); j++)
+                for (var j = 0; j < _cells.GetLength(1); j++)
                 {
                     result += IsVisible(i, j) ? 1 : 0;
                 }
@@ -153,13 +118,13 @@ internal class Day08 : IChallenge
                 return true;
             }
 
-            var height = _rows[row, column];
+            var height = _cells[row, column];
 
             if (!IsVisibleFromTop(row, column, height) &&
                 !IsVisibleFromBottom(row, column, height) &&
                 !IsVisibleFromLeft(row, column, height) &&
                 !IsVisibleFromRight(row, column, height)) return false;
-            
+
             return true;
         }
 
@@ -167,7 +132,7 @@ internal class Day08 : IChallenge
         {
             for (var i = column + 1; i < MaxColumns; i++)
             {
-                if (_rows[row, i] >= height)
+                if (_cells[row, i] >= height)
                 {
                     return false;
                 }
@@ -180,7 +145,7 @@ internal class Day08 : IChallenge
         {
             for (var i = 0; i < column; i++)
             {
-                if (_rows[row, i] >= height)
+                if (_cells[row, i] >= height)
                 {
                     return false;
                 }
@@ -193,7 +158,7 @@ internal class Day08 : IChallenge
         {
             for (var i = row + 1; i < MaxRows; i++)
             {
-                if (_rows[i, column] >= height)
+                if (_cells[i, column] >= height)
                 {
                     return false;
                 }
@@ -206,12 +171,24 @@ internal class Day08 : IChallenge
         {
             for (var i = 0; i < row; i++)
             {
-                if (_rows[i, column] >= height)
+                if (_cells[i, column] >= height)
                 {
                     return false;
                 }
             }
             return true;
+        }
+
+        private int[][] GetRows()
+        {
+            return Enumerable.Range(0, MaxRows)
+                .Select(row => Enumerable.Range(0, MaxColumns).Select(col => _cells[row, col]).ToArray()).ToArray();
+        }
+
+        private int[][] GetColumns()
+        {
+            return Enumerable.Range(0, MaxColumns)
+                .Select(col => Enumerable.Range(0, MaxRows).Select(row => _cells[row, col]).ToArray()).ToArray();
         }
     }
 }
