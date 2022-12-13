@@ -23,7 +23,7 @@ internal class Day13 : IChallenge
             var a = pairs[i];
             var b = pairs[i + 1];
 
-            if (a.IsSmaller(b) == -1) result.Add(pairIndex);
+            if (a.Compare(b) == -1) result.Add(pairIndex);
 
             pairIndex++;
         }
@@ -39,21 +39,21 @@ internal class Day13 : IChallenge
         var secondDivider = new Packet("[[6]]");
         pairs.Add(secondDivider);
 
-        pairs.Sort((a, b) => a.IsSmaller(b));
+        pairs.Sort((a, b) => a.Compare(b));
         
         var indexOfFirstDivider = -1;
         var indexOfSecondDivider = -1;
-        for (var i = 1; i <= pairs.Count; i++)
+        for (var i = 0; i <= pairs.Count; i++)
         {
-            var row = pairs[i - 1];
+            var row = pairs[i];
             if (row.Packets is [Packet { Packets: [ValuePacket { Value: 2 }] }])
             {
-                indexOfFirstDivider = i;
+                indexOfFirstDivider = i + 1;
             }
 
             if (row.Packets is [Packet { Packets: [ValuePacket { Value: 6 }] }])
             {
-                indexOfSecondDivider = i;
+                indexOfSecondDivider = i + 1;
             }
         }
         
@@ -67,7 +67,7 @@ internal class Day13 : IChallenge
 
     private interface IPacket
     {
-        public int IsSmaller(IPacket other);
+        public int Compare(IPacket other);
     }
     
     private class Packet : IPacket
@@ -89,7 +89,7 @@ internal class Day13 : IChallenge
                 var element = line[currentIndex];
                 if (element == '[')
                 {
-                    var endIndex = FindIndexMatch(line[currentIndex..]) + currentIndex;
+                    var endIndex = FindMatchingClosingElement(line[currentIndex..]) + currentIndex;
                     var packetLine = line.Substring(currentIndex, endIndex - currentIndex + 1);
                     Packets.Add(new Packet(packetLine));
 
@@ -97,6 +97,7 @@ internal class Day13 : IChallenge
                 }
                 else if (IsNumber(element))
                 {
+                    // Take into account integers larger than 9
                     if (currentIndex != line.Length - 1 && IsNumber(line[currentIndex + 1]))
                     {
                         var number = string.Concat(element, line[currentIndex + 1]);
@@ -120,7 +121,7 @@ internal class Day13 : IChallenge
 
         private bool IsNumber(char value) => value >= 48 && value <= 57;
 
-        private int FindIndexMatch(string line)
+        private int FindMatchingClosingElement(string line)
         {
             var opening = 0;
             for (var i = 1; i < line.Length; i++)
@@ -146,7 +147,7 @@ internal class Day13 : IChallenge
 
         public List<IPacket> Packets { get; }
         
-        public int IsSmaller(IPacket other)
+        public int Compare(IPacket other)
         {
             if (other is ValuePacket otherAsValuePacket)
             {
@@ -158,7 +159,7 @@ internal class Day13 : IChallenge
                 var count = Math.Min(Packets.Count, otherAsPacket.Packets.Count);
                 for (var i = 0; i < count; i++)
                 {
-                    var compareResult = Packets[i].IsSmaller(otherAsPacket.Packets[i]);
+                    var compareResult = Packets[i].Compare(otherAsPacket.Packets[i]);
                     if (compareResult == 1)
                     {
                         return 1;
@@ -187,7 +188,7 @@ internal class Day13 : IChallenge
 
         public int Value { get; }
 
-        public int IsSmaller(IPacket other)
+        public int Compare(IPacket other)
         {
             if (other is ValuePacket otherAsValuePacket)
             {
@@ -197,7 +198,7 @@ internal class Day13 : IChallenge
             }
 
             var thisAsPacket = new Packet(this);
-            return thisAsPacket.IsSmaller(other);
+            return thisAsPacket.Compare(other);
         }
     }
 }
