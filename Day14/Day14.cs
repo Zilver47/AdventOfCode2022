@@ -15,55 +15,47 @@ internal class Day14 : IChallenge
 
     public long Part1()
     {
-        //var c = Parse();
+        var coordinates = Parse();
 
-        //var b = new Board(c);
-        ////b.Print();
+        var board = new Board(coordinates);
+        board.Print();
 
-        //for (int i = 0; i < 2500; i++)
-        //{
-        //    if (b.AddSand())
-        //    {
-        //        //b.Print();
-        //        return i;
-        //    }
-
-        //    //b.Print();
-        //}
-
-        ////b.Print();
+        for (var i = 0; i < 2500; i++)
+        {
+            if (board.AddSand())
+            {
+                board.Print();
+                return i;
+            }
+        }
 
         return -1;
     }
 
     public long Part2()
     {
-        var c = Parse();
-        var maxRows = c.SelectMany(x => x).Select(x => x.x).Max();
-        var minColumns = c.SelectMany(x => x).Select(x => x.y).Min();
-        var maxColumns = c.SelectMany(x => x).Select(x => x.y).Max();
+        var coordinates = Parse();
+        var maxRows = coordinates.SelectMany(x => x).Select(x => x.x).Max();
+        var maxColumns = coordinates.SelectMany(x => x).Select(x => x.y).Max();
 
-        var list = new List<(int row, int column)>();
-        list.Add((maxRows + 2, 1));
-        list.Add((maxRows + 2, maxColumns + 400));
-
-        c.Add(list);
-
-        var b = new Board(c);
-        //b.Print();
-
-        for (int i = 0; i < 1214900; i++)
+        var listOfCoordinates = new List<(int row, int column)>
         {
-            if (b.AddSand())
+            (maxRows + 2, 1),
+            (maxRows + 2, maxColumns + 400)
+        };
+        coordinates.Add(listOfCoordinates);
+
+        var board = new Board(coordinates);
+        //board.Print();
+
+        for (var i = 0; i < 100000; i++)
+        {
+            if (board.AddSand())
             {
-                b.Print();
-                return i;
+                //board.Print();
+                return i + 1;
             }
-
-            //b.Print();
         }
-
-        //b.Print();
 
         return -1;
     }
@@ -73,15 +65,15 @@ internal class Day14 : IChallenge
         var result = new List<List<(int x, int y)>>();
         foreach (var line in _input)
         {
-            var lineResult = new List<(int x, int y)>();
-            var coors = line.Split(" -> ");
-            foreach (var coor in coors)
+            var listOfCoordinates = new List<(int x, int y)>();
+            var coordinates = line.Split(" -> ");
+            foreach (var coordinate in coordinates)
             {
-                var splitted = coor.Split(',');
-                lineResult.Add((int.Parse(splitted[1]), int.Parse(splitted[0])));
+                var splitted = coordinate.Split(',');
+                listOfCoordinates.Add((int.Parse(splitted[1]), int.Parse(splitted[0])));
             }
 
-            result.Add(lineResult);
+            result.Add(listOfCoordinates);
         }
 
         return result;
@@ -96,11 +88,11 @@ internal class Day14 : IChallenge
         public int MaxColumns { get; }
         public int MaxRows { get; }
 
-        public Board(List<List<(int row, int column)>> coord)
+        public Board(List<List<(int row, int column)>> coordinates)
         {
-            MaxRows = coord.SelectMany(x => x).Select(x => x.row).Max();
-            MinColumns = coord.SelectMany(x => x).Select(x => x.column).Min();
-            MaxColumns = coord.SelectMany(x => x).Select(x => x.column).Max();
+            MaxRows = coordinates.SelectMany(x => x).Select(x => x.row).Max();
+            MinColumns = coordinates.SelectMany(x => x).Select(x => x.column).Min();
+            MaxColumns = coordinates.SelectMany(x => x).Select(x => x.column).Max();
             _cells = new char[MaxRows + 2, MaxColumns + 2];
 
             for (var row = 0; row <= MaxRows + 1; row++)
@@ -111,22 +103,22 @@ internal class Day14 : IChallenge
                 }
             }
 
-            SetRocks(coord);
+            SetRocks(coordinates);
         }
 
-        private void SetRocks(List<List<(int row, int column)>> lines)
+        private void SetRocks(List<List<(int row, int column)>> allRocks)
         {
-            foreach (var coord in lines) 
+            foreach (var listOfCoordinates in allRocks) 
             { 
-                for (int i = 0; i < coord.Count - 1; i++)
+                for (var i = 0; i < listOfCoordinates.Count - 1; i++)
                 {
-                    var a = coord[i];
-                    var b = coord[i + 1];
+                    var start = listOfCoordinates[i];
+                    var end = listOfCoordinates[i + 1];
 
-                    var minRow = Math.Min(a.row, b.row);
-                    var maxRow = Math.Max(a.row, b.row);
-                    var minColumn = Math.Min(a.column, b.column);
-                    var maxColumn = Math.Max(a.column, b.column);
+                    var minRow = Math.Min(start.row, end.row);
+                    var maxRow = Math.Max(start.row, end.row);
+                    var minColumn = Math.Min(start.column, end.column);
+                    var maxColumn = Math.Max(start.column, end.column);
 
                     for (var row = minRow; row <= maxRow; row++)
                     {
@@ -145,8 +137,8 @@ internal class Day14 : IChallenge
 
             while (position.row < MaxRows && position.column >= MinColumns && position.column <= MaxColumns)
             {
-                var next = GetPossible(position);
-                if (!next.Any())
+                var nextPositions = GetNextPositions(position);
+                if (!nextPositions.Any())
                 {
                     if (position.row == 0)
                     {
@@ -157,13 +149,13 @@ internal class Day14 : IChallenge
                     return false;
                 }
 
-                position = next[0];
+                position = nextPositions[0];
             }
 
             return true;
         }
 
-        private List<(int row, int column)> GetPossible((int row, int column) position) 
+        private List<(int row, int column)> GetNextPositions((int row, int column) position) 
         {
             var possiblePositions = new List<(int row, int column)>
             {
@@ -189,7 +181,7 @@ internal class Day14 : IChallenge
                 Console.Write(" ");
 
 
-                for (var column = 470; column <= 590; column++)
+                for (var column = MinColumns; column <= MaxColumns; column++)
                 {
                     Console.Write(_cells[row, column]);
                 }
