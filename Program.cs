@@ -3,8 +3,8 @@
 var timer = new Stopwatch();
 timer.Start();
 
-var lines = File.ReadAllLines($"{nameof(Day14)}\\input.txt");
-var generator = new Day14(lines);
+var lines = File.ReadAllLines($"{nameof(Day15)}\\input.txt");
+var generator = new Day15(lines);
 
 Console.WriteLine($"--- {generator.GetType().Name} ---");
 Console.Write("Answer 1: ");
